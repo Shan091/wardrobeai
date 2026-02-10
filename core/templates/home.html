@@ -7,41 +7,37 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     
     <style>
-        /* 1. Global Reset & Apple Style Typography */
+        /* 1. Global Reset */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #fbfbfd; /* Apple's off-white background */
-            height: 100vh; /* Force full height */
+            background: #fbfbfd;
+            height: 100vh;
             width: 100vw;
-            overflow: hidden; /* Disable scrolling */
             display: flex;
             align-items: center;
             justify-content: center;
             color: #1d1d1f;
         }
 
-        /* 2. The Glass Card */
+        /* 2. Glass Card */
         .glass-card {
-            background: rgba(255, 255, 255, 0.85); /* Semi-transparent white */
-            backdrop-filter: blur(20px); /* Frosted glass effect */
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             width: 90%;
-            max-width: 420px; /* iPhone Pro Max width style */
+            max-width: 400px;
             border-radius: 24px;
-            padding: 32px;
+            padding: 40px 32px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.6);
-            
-            /* Layout inside the card */
             display: flex;
             flex-direction: column;
             align-items: center;
-            max-height: 90vh; /* Never go taller than 90% of screen */
+            transition: height 0.3s ease;
         }
 
-        /* 3. Typography */
         h1 {
             font-size: 24px;
             font-weight: 600;
@@ -52,125 +48,115 @@
         p {
             font-size: 15px;
             color: #86868b;
-            margin-bottom: 24px;
+            margin-bottom: 32px;
         }
 
-        /* 4. The Upload Button */
+        /* 3. Form Elements */
+        form { width: 100%; }
+
         .file-input-wrapper {
             width: 100%;
             margin-bottom: 16px;
         }
         
-        input[type="file"] {
-            display: none; /* Hide ugly default input */
-        }
+        input[type="file"] { display: none; }
         
         .custom-file-btn {
             display: block;
             width: 100%;
-            padding: 14px;
+            padding: 16px;
             background: #f5f5f7;
             color: #1d1d1f;
             text-align: center;
-            border-radius: 12px;
-            font-size: 14px;
+            border-radius: 14px;
+            font-size: 15px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s ease;
         }
         
-        .custom-file-btn:hover {
-            background: #e8e8ed;
-        }
+        .custom-file-btn:hover { background: #e8e8ed; }
 
         .submit-btn {
             width: 100%;
-            padding: 14px;
-            background: #0071e3; /* Apple Blue */
+            padding: 16px;
+            background: #0071e3;
             color: white;
             border: none;
-            border-radius: 12px;
+            border-radius: 14px;
             font-size: 15px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
             transition: transform 0.1s ease;
         }
         
-        .submit-btn:active {
-            transform: scale(0.98);
-        }
+        .submit-btn:active { transform: scale(0.98); }
 
-        /* 5. Result Section (Handling the Image) */
+        /* 4. Result Display */
         .result-container {
-            margin-top: 24px;
+            margin-top: 32px;
             width: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
-            /* Scroll internally if content is too tall, protecting 100vh */
-            overflow-y: auto; 
+            animation: fadeIn 0.5s ease;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            padding-top: 24px;
         }
 
         .preview-img {
-            width: 100%;
-            max-height: 250px; /* Constrain image height */
-            object-fit: contain; /* Keep aspect ratio */
+            width: 180px;
+            height: 180px;
+            object-fit: contain;
             border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background: white;
+            padding: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 16px;
         }
 
         .result-badge {
-            margin-top: 16px;
-            padding: 8px 16px;
+            padding: 8px 20px;
             background: #e3f2fd;
             color: #0071e3;
             border-radius: 20px;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 600;
             letter-spacing: -0.3px;
         }
 
-        /* Loading Spinner */
+        /* Spinner */
         .spinner {
-            width: 24px;
-            height: 24px;
-            border: 3px solid rgba(255,255,255,0.3);
+            width: 20px; height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
             border-radius: 50%;
             border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-            display: none;
-            margin: auto;
-        }
-        .glass-card h1, .glass-card p {
-            text-align: center;
-            margin-bottom: 24px;
+            animation: spin 0.8s ease-in-out infinite;
+            display: none; margin: auto;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        /* Utility to hide/show */
-        .hidden { display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
     <div class="glass-card">
         <h1>Wardrobe AI</h1>
+        <p>Scanner Ready</p>
 
-        <form method="post" enctype="multipart/form-data" style="width: 100%;">
+        <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             
             <div class="file-input-wrapper">
                 <label for="file-upload" class="custom-file-btn" id="file-label">
-                    Select Photo
+                    Choose Photo
                 </label>
                 <input id="file-upload" type="file" name="image" required onchange="updateFileName(this)">
             </div>
 
             <button type="submit" class="submit-btn" onclick="showLoading(this)">
-                <span id="btn-text">Identify</span>
+                <span id="btn-text">Scan Item</span>
                 <div id="btn-spinner" class="spinner"></div>
             </button>
         </form>
@@ -181,10 +167,10 @@
             <div class="result-badge">{{ result }}</div>
         </div>
         {% endif %}
+
     </div>
 
     <script>
-        // Update the button text when file is selected
         function updateFileName(input) {
             const label = document.getElementById('file-label');
             if (input.files && input.files.length > 0) {
@@ -194,13 +180,11 @@
             }
         }
 
-        // Show spinner on click
         function showLoading(btn) {
             const text = document.getElementById('btn-text');
             const spinner = document.getElementById('btn-spinner');
-            
-            // Only show loading if file is selected
             const fileInput = document.getElementById('file-upload');
+            
             if (fileInput.files.length > 0) {
                 text.style.display = 'none';
                 spinner.style.display = 'block';
