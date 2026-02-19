@@ -24,17 +24,14 @@ def home(request):
     context['items'] = items
 
     if request.method == 'POST' and request.FILES.get('image'):
-        # --- STEP 1: Save to Database & Disk ---
-        # We create the object directly from the uploaded file.
-        # This automatically handles saving the file to /media/ AND creating the DB row.
+        
         new_item = ClothingItem.objects.create(
             image=request.FILES['image'],
             name="Processing...", # Temporary name
             category="Uncategorized"
         )
 
-        # --- STEP 2: Process Image for AI ---
-        # Get the full path of the image we just saved
+        
         file_path = new_item.image.path
 
         try:
@@ -53,7 +50,7 @@ def home(request):
             # --- STEP 4: Update Database with AI Result ---
             new_item.name = predicted_class.title()  # Auto-name the item
             new_item.category = "top" if predicted_class in ['T-shirt/top', 'Pullover', 'Shirt', 'Coat'] else "bottom" # Simple auto-categorization
-            new_item.save()  # Save the changes to the DB
+            new_item.save()  
             
             # Add result to context for the popup/display
             context['result'] = predicted_class.title()
