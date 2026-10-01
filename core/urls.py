@@ -1,9 +1,9 @@
-from django.contrib import admin
 from django.urls import path
-from django.conf import settings
-from django.conf.urls.static import static
-from core.views import home
+
+from . import views
 
 urlpatterns = [
-    path("", home, name="home"),
+    path("", views.home, name="home"),
+    path("healthz/", views.healthz, name="healthz"),
+    path("media/<path:path>", views.media_file, name="media"),
 ]

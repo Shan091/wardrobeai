@@ -125,6 +125,9 @@
             letter-spacing: -0.3px;
         }
 
+        .error { color: #c62828; font-size: 14px; margin: 16px 0 0; text-align: center; }
+        .confidence { font-size: 13px; margin: 10px 0 0; }
+
         /* Spinner */
         .spinner {
             width: 20px; height: 20px;
@@ -152,7 +155,7 @@
                 <label for="file-upload" class="custom-file-btn" id="file-label">
                     Choose Photo
                 </label>
-                <input id="file-upload" type="file" name="image" required onchange="updateFileName(this)">
+                <input id="file-upload" type="file" name="image" accept="image/jpeg,image/png,image/webp" required onchange="updateFileName(this)">
             </div>
 
             <button type="submit" class="submit-btn" onclick="showLoading(this)">
@@ -161,10 +164,17 @@
             </button>
         </form>
 
-        {% if result %}
+        {% if error %}
+        <p class="error" role="alert">{{ error }}</p>
+        {% endif %}
+
+        {% if item %}
         <div class="result-container">
-            <img src="{{ file_url }}" class="preview-img">
-            <div class="result-badge">{{ result }}</div>
+            <img src="{{ item.image.url }}" alt="Uploaded photo: {{ item.name }}" class="preview-img">
+            <div class="result-badge">{{ item.name }}</div>
+            <p class="confidence">
+                {% if uncertain %}Best guess &middot; {% endif %}{% widthratio item.confidence 1 100 %}% confident
+            </p>
         </div>
         {% endif %}
 
