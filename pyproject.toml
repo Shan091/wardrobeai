@@ -1,0 +1,17 @@
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "DJ"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "wardrobe_project.settings"
+python_files = ["tests.py", "test_*.py"]
+addopts = "-ra"
+filterwarnings = ["ignore:No directory at:UserWarning"]
+env = [
+  "DJANGO_DEBUG=true",
+  "TF_CPP_MIN_LOG_LEVEL=3",
+]

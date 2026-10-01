@@ -1,63 +1,82 @@
-import os
-import numpy as np
-from django.shortcuts import render, redirect
-from django.conf import settings
-from tensorflow.keras.models import load_model # type: ignore
-from tensorflow.keras.preprocessing import image # type: ignore
-from PIL import Image, ImageOps
+import logging
 
-# Import your database model
+from django.conf import settings
+from django.db import connection
+from django.http import FileResponse, Http404, JsonResponse
+from django.shortcuts import redirect, render
+from django.views.decorators.http import require_GET, require_http_methods
+
+from . import ml
+from .forms import UploadForm
 from .models import ClothingItem
 
-# Load model once when server starts
-MODEL_PATH = os.path.join(settings.BASE_DIR, 'core/wardrobe_model.keras')
-model = load_model(MODEL_PATH)
+logger = logging.getLogger(__name__)
 
-class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat', 
-               'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 
+@require_http_methods(["GET", "POST"])
 def home(request):
-    context = {}
-    
-    # Grab all items from the database to display them
-    items = ClothingItem.objects.all().order_by('-uploaded_at')
-    context['items'] = items
+    context = {"form": UploadForm(), "error": None}
 
-    if request.method == 'POST' and request.FILES.get('image'):
-        
-        new_item = ClothingItem.objects.create(
-            image=request.FILES['image'],
-            name="Processing...", # Temporary name
-            category="Uncategorized"
-        )
+    if request.method == "POST":
+        form = UploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            upload = form.cleaned_data["image"]
+            try:
+                # Classify before saving so a failure leaves no orphaned row or file.
+                prediction = ml.classify(upload)
+            except Exception:
+                logger.exception("Image classification failed")
+                context["error"] = "Sorry, we couldn't analyse that image. Please try another one."
+            else:
+                upload.seek(0)
+                item = ClothingItem.objects.create(
+                    image=upload,
+                    name=prediction.label,
+                    category=prediction.category,
+                    confidence=prediction.confidence,
+                )
+                # Post/Redirect/Get: refreshing the page must not re-upload the file.
+                return redirect(f"{request.path}?scan={item.pk}")
+        else:
+            context["error"] = " ".join(form.errors["image"])
+    else:
+        scan_id = request.GET.get("scan", "")
+        if scan_id.isdigit():
+            item = ClothingItem.objects.filter(pk=int(scan_id)).first()
+            if item:
+                context["item"] = item
+                context["uncertain"] = (item.confidence or 0) < settings.CONFIDENCE_THRESHOLD
 
-        
-        file_path = new_item.image.path
+    return render(request, "home.html", context, status=400 if context["error"] else 200)
 
-        try:
-            img = Image.open(file_path)
-            img = img.convert('L') # Gray
-            img = img.resize((28, 28), Image.Resampling.LANCZOS) # Resize
-            img = ImageOps.invert(img) # Invert colors
-            
-            # --- STEP 3: Predict ---
-            img_array = np.array(img) / 255.0
-            img_array = img_array.reshape(1, 28, 28, 1)
-            
-            prediction = model.predict(img_array)
-            predicted_class = class_names[np.argmax(prediction)]
-            
-            # --- STEP 4: Update Database with AI Result ---
-            new_item.name = predicted_class.title()  # Auto-name the item
-            new_item.category = "top" if predicted_class in ['T-shirt/top', 'Pullover', 'Shirt', 'Coat'] else "bottom" # Simple auto-categorization
-            new_item.save()  
-            
-            # Add result to context for the popup/display
-            context['result'] = predicted_class.title()
-            context['file_url'] = new_item.image.url
-            
-        except Exception as e:
-            print(f"Error processing image: {e}")
-            # Optional: Delete the item if AI fails, or keep it as 'Unknown'
 
-    return render(request, 'home.html', context)
+@require_GET
+def media_file(request, path):
+    """Serve an uploaded image, but only if it belongs to a ClothingItem.
+
+    Django does not serve MEDIA_ROOT outside development. Looking the path up in the
+    database (rather than joining it onto MEDIA_ROOT) rules out path traversal.
+    For high traffic, serve MEDIA_ROOT directly from nginx / object storage instead.
+    """
+    item = ClothingItem.objects.filter(image=path).first()
+    if item is None:
+        raise Http404
+    try:
+        response = FileResponse(item.image.open("rb"))
+    except FileNotFoundError:
+        raise Http404 from None
+    # File names are random UUIDs and never change, so they can be cached aggressively.
+    response["Cache-Control"] = "public, max-age=86400, immutable"
+    return response
+
+
+@require_GET
+def healthz(request):
+    """Liveness/readiness probe: verifies the database is reachable."""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+    except Exception:
+        logger.exception("Health check failed")
+        return JsonResponse({"status": "error"}, status=503)
+    return JsonResponse({"status": "ok"})

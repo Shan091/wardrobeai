@@ -1,0 +1,9 @@
+# Runtime dependencies. Ranges are tested; pin exact versions with a lock file if you need fully reproducible builds.
+Django>=5.2,<5.3
+tensorflow-cpu>=2.18,<2.22   # use `tensorflow` instead if you need GPU support
+numpy>=1.26
+Pillow>=10.3
+gunicorn>=22.0
+whitenoise>=6.7
+dj-database-url>=2.2
+python-dotenv>=1.0
